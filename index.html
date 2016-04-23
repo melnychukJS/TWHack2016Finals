@@ -138,16 +138,6 @@ a.c1 {font-weight: normal;}
             <p>
               (Command-C on Mac.)
             </p>
-          </div><button class="button" id="email_button" onclick="emailButton()">Create
-          Email</button>
-          <div id="email_info">
-            <p>
-              Text sent to default email application.
-            </p>
-            <p>
-              (See chrome://settings/handlers to change.)
-            </p>
-          </div>
         </div>
         <div class="compact marquee" id="div_language">
           <select id="select_language" onchange="updateCountry()">
@@ -276,7 +266,7 @@ function updateCountry() {
   select_dialect.style.visibility = list[1].length == 1 ? 'hidden' : 'visible';
 }
 
-var create_email = false;
+
 var final_transcript = '';
 var recognizing = false;
 var ignore_onend;
@@ -333,10 +323,8 @@ if (!('webkitSpeechRecognition' in window)) {
       range.selectNode(document.getElementById('final_span'));
       window.getSelection().addRange(range);
     }
-    if (create_email) {
-      create_email = false;
-      createEmail();
-    }
+
+
   };
 
   recognition.onresult = function(event) {
@@ -379,16 +367,6 @@ function capitalize(s) {
   return s.replace(first_char, function(m) { return m.toUpperCase(); });
 }
 
-function createEmail() {
-  var n = final_transcript.indexOf('\n');
-  if (n < 0 || n >= 80) {
-    n = 40 + final_transcript.substring(40).indexOf(' ');
-  }
-  var subject = encodeURI(final_transcript.substring(0, n));
-  var body = encodeURI(final_transcript.substring(n + 1));
-  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
-}
-
 function copyButton() {
   if (recognizing) {
     recognizing = false;
@@ -399,18 +377,6 @@ function copyButton() {
   showInfo('');
 }
 
-function emailButton() {
-  if (recognizing) {
-    create_email = true;
-    recognizing = false;
-    recognition.stop();
-  } else {
-    createEmail();
-  }
-  email_button.style.display = 'none';
-  email_info.style.display = 'inline-block';
-  showInfo('');
-}
 
 function startButton(event) {
   if (recognizing) {
@@ -470,9 +436,7 @@ function showButtons(style) {
   }
   current_style = style;
   copy_button.style.display = style;
-  email_button.style.display = style;
   copy_info.style.display = 'none';
-  email_info.style.display = 'none';
 }
     </script>
   </body>
