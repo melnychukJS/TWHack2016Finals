@@ -53,6 +53,7 @@ FEE_MESSAGE = """The fee will be
 
 HISTORY_MESSAGE = """Past transactions:
 
+* 50€ to @tinka some seconds ago
 * 200.000€ to @melnychukJS yesterday noon
 * $100 to @javierhonduco 2 days ago in the morning
 * 300€ to pounds sent to @Nooregaardo a month ago
@@ -102,10 +103,10 @@ def pay(bot, update):
             headers=headers,
             auth=('b909eac5-b567-4ca2-a55d-4cb2eeb74a79', '5cfe25e0-f322-404a-b0d3-537d262b2fd0')).json()
 
-            bot.sendMessage(update.message.chat_id, text="""Total amount is {}.
+            bot.sendMessage(update.message.chat_id, text="""Total amount is {}{}.
 Transaction fee is {}{}.
 Type /confirm <passcode>. (the passcode will be sent to your other linked device.)
-""".format(float(money[0])+response["fee"], response["fee"], currency[0]))
+""".format(float(money[0])+response["fee"], currency[0], response["fee"], currency[0]))
         else:
             response = requests.get('https://test-restgw.transferwise.com/v1/quotes?source={}&target={}&sourceAmount={}&rateType=FIXED'.format(
                 to_iso(currency[0]),
@@ -115,10 +116,10 @@ Type /confirm <passcode>. (the passcode will be sent to your other linked device
             headers=headers,
             auth=('b909eac5-b567-4ca2-a55d-4cb2eeb74a79', '5cfe25e0-f322-404a-b0d3-537d262b2fd0')).json()
 
-            bot.sendMessage(update.message.chat_id, text="""Total amount of conversion is {}.
+            bot.sendMessage(update.message.chat_id, text="""Total amount of conversion is {}{}.
 Transaction fee is {}{}.
 Type /confirm <passcode>. (the passcode will be sent to your other linked device.)
-""".format(float(money[0])+response["fee"], response["fee"], currency[1]))
+""".format(float(money[0])+response["fee"], currency[1], response["fee"], currency[1]))
 
 
 def to_iso(input):
