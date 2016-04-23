@@ -17,29 +17,31 @@ logger = logging.getLogger(__name__)
 REGEX = '\$|€|£|pound[s]|euro?s?|dollar[s]'
 
 WELCOME_MESSAGE = """Hi!
-I'm transferbot and I can help you sending money :)
+Send money or exchange currency, right here.
 
-Example of useful commands:
-
-- Money transferring & exchange:
+Examples:
+- Transfer/exchange money:
     /pay 50€ [to dollars] to @username
-
 - Check the fee that you would be charged:
     /fee $20
-
+- Show past transactions:
+    /history
 Powered by TransferWise™. 
 (Disclaimer: This product is not created neither endorsed with TransferWise™ in any ways.)
 """
 
 
 HELP_MESSAGE = """
-Example of useful commands:
+Examples of useful commands:
 
-- Money transferring & exchange:
+- Transfer/exchange money:
     /pay 50€ [to dollars] to @username
 
 - Check the fee that you would be charged:
     /fee $20
+
+- Show past transactions:
+    /history
 """
 
 PAY_MESSAGE = """Cool!
@@ -59,13 +61,22 @@ def help(bot, update):
     bot.sendMessage(update.message.chat_id, text=HELP_MESSAGE)
 
 
+def history(bot, update):
+    bot.sendMessage(update.message.chat_id, text="""Past transactions:
+
+* 200.000€ to @melnychukJS yesterday noon
+* $100 to @javierhonduco 2 days ago in the morning
+* 300€ to pounds sent to @Nooregaardo a month ago
+""")
+
+
 def pay(bot, update):
     text = update['message']['text']
 
-    money = re.findall('[0-9]+', text)
-    currency = re.findall(REGEX, text)
+    money = re.findall('[0-9]+', text, re.IGNORECASE)
+    currency = re.findall(REGEX, text, re.IGNORECASE)
 
-    to = re.findall('@[a-zA-Z]+', text)
+    to = re.findall('@[a-zA-Z]+', text, re.IGNORECASE)
     if len(money) == 0:
         bot.sendMessage(update.message.chat_id, text="Please, input the amount. See /help for tips.")
     elif len(currency) == 0:
@@ -92,14 +103,14 @@ def to_iso(input):
         'dollar': 'USD',
         'dollars': 'USD',
         '$': 'USD',
-    }.get(input, 'EUR')
+    }.get(input.lower(), 'EUR')
 
 
 def fee(bot, update):
     text = update['message']['text']
 
-    money = re.findall('[0-9]+', text)
-    currency = re.findall(REGEX, text)
+    money = re.findall('[0-9]+', text, re.IGNORECASE)
+    currency = re.findall(REGEX, text, re.IGNORECASE)
 
     if len(money)==0:
         bot.sendMessage(update.message.chat_id, text="Please, input the amount.")
@@ -107,7 +118,7 @@ def fee(bot, update):
         bot.sendMessage(update.message.chat_id, text="Please, input the currency.")
     else:
 
-        currency = re.findall(REGEX, text)
+        currency = re.findall(REGEX, text, re.IGNORECASE)
 
     if len(money)==0:
         bot.sendMessage(update.message.chat_id, text="Please, input the amount.")
@@ -116,7 +127,7 @@ def fee(bot, update):
     else:
         headers = {'Content-type': 'application/json'}
 
-        currency = re.findall(REGEX, text)
+        currency = re.findall(REGEX, text, re.IGNORECASE)
         if len(currency)>1:
 
             response = requests.get('https://test-restgw.transferwise.com/v1/quotes?source={}&target={}&sourceAmount={}&rateType=FIXED'.format(
@@ -188,6 +199,7 @@ def main():
     dp.addTelegramCommandHandler("help", help)
     dp.addTelegramCommandHandler("pay", pay)
     dp.addTelegramCommandHandler("fee", fee)
+    dp.addTelegramCommandHandler("history", history)
 
     # on noncommand i.e message - echo the message on Telegram
     dp.addTelegramInlineHandler(inlinequery)
