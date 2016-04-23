@@ -127,10 +127,16 @@ def fee(bot, update):
             headers=headers,
             auth=('b909eac5-b567-4ca2-a55d-4cb2eeb74a79', '5cfe25e0-f322-404a-b0d3-537d262b2fd0')).json()
 
-            print(response)
-            bot.sendMessage(update.message.chat_id, text=FEE_MESSAGE.format(response['fee'], currency[0]))
+            bot.sendMessage(update.message.chat_id, text=FEE_MESSAGE.format(response['fee'], currency[1]))
         else:
-            bot.sendMessage(update.message.chat_id, text=FEE_MESSAGE.format("shit", currency[0]))
+            response = requests.get('https://test-restgw.transferwise.com/v1/quotes?source={}&target={}&sourceAmount={}&rateType=FIXED'.format(
+                to_iso(currency[0]),
+                to_iso(currency[0]),
+                money[0]
+            ), 
+            headers=headers,
+            auth=('b909eac5-b567-4ca2-a55d-4cb2eeb74a79', '5cfe25e0-f322-404a-b0d3-537d262b2fd0')).json()
+            bot.sendMessage(update.message.chat_id, text=FEE_MESSAGE.format(response['fee'], currency[0]))
 
 
 
