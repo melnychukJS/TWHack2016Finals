@@ -6,6 +6,9 @@ from telegram import InlineQueryResultArticle, ParseMode
 from telegram.ext import Updater
 import requests
 import logging
+import random
+
+headers = {'Content-type': 'application/json'}
 
 # Enable logging
 logging.basicConfig(
@@ -44,12 +47,16 @@ Examples of useful commands:
     /history
 """
 
-PAY_MESSAGE = """Cool!
-{}{} sent to {}!
-"""
 
 FEE_MESSAGE = """The fee will be
 {}{}"""
+
+HISTORY_MESSAGE = """Past transactions:
+
+* 200.000€ to @melnychukJS yesterday noon
+* $100 to @javierhonduco 2 days ago in the morning
+* 300€ to pounds sent to @Nooregaardo a month ago
+"""
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
@@ -61,13 +68,15 @@ def help(bot, update):
     bot.sendMessage(update.message.chat_id, text=HELP_MESSAGE)
 
 
-def history(bot, update):
-    bot.sendMessage(update.message.chat_id, text="""Past transactions:
+def confirm(bot, update):
+    bot.sendMessage(update.message.chat_id, text="""Cool!
+Transaction reference number is `{}`.
+All the details were sent to your email.
+Cheers!""".format(random.randint(1, 99999999)))
 
-* 200.000€ to @melnychukJS yesterday noon
-* $100 to @javierhonduco 2 days ago in the morning
-* 300€ to pounds sent to @Nooregaardo a month ago
-""")
+
+def history(bot, update):
+    bot.sendMessage(update.message.chat_id, text=HISTORY_MESSAGE)
 
 
 def pay(bot, update):
@@ -85,11 +94,32 @@ def pay(bot, update):
         bot.sendMessage(update.message.chat_id, text="Please, input the receiver. See /help for tips.")
     else:
         if len(currency)==1:
-            bot.sendMessage(update.message.chat_id, text=PAY_MESSAGE.format(money[0], currency[0], to[0]))
+            response = requests.get('https://test-restgw.transferwise.com/v1/quotes?source={}&target={}&sourceAmount={}&rateType=FIXED'.format(
+                to_iso(currency[0]),
+                to_iso(currency[0]),
+                money[0]
+            ), 
+            headers=headers,
+            auth=('b909eac5-b567-4ca2-a55d-4cb2eeb74a79', '5cfe25e0-f322-404a-b0d3-537d262b2fd0')).json()
+
+            bot.sendMessage(update.message.chat_id, text="""Total amount is {}.
+Transaction fee is {}{}.
+Type /confirm <passcode>. (the passcode will be sent to your other linked device.)
+""".format(float(money[0])+response["fee"], response["fee"], currency[0]))
         else:
-            bot.sendMessage(update.message.chat_id, text="""Cool!
-    {}{} converted to {} and sent to {}!
-    """.format(money[0], currency[0], currency[1], to[0]))
+            response = requests.get('https://test-restgw.transferwise.com/v1/quotes?source={}&target={}&sourceAmount={}&rateType=FIXED'.format(
+                to_iso(currency[0]),
+                to_iso(currency[1]),
+                money[0]
+            ), 
+            headers=headers,
+            auth=('b909eac5-b567-4ca2-a55d-4cb2eeb74a79', '5cfe25e0-f322-404a-b0d3-537d262b2fd0')).json()
+
+            bot.sendMessage(update.message.chat_id, text="""Total amount of conversion is {}.
+Transaction fee is {}{}.
+Type /confirm <passcode>. (the passcode will be sent to your other linked device.)
+""".format(float(money[0])+response["fee"], response["fee"], currency[1]))
+
 
 def to_iso(input):
     return {
@@ -125,7 +155,6 @@ def fee(bot, update):
     elif len(currency)==0:
         bot.sendMessage(update.message.chat_id, text="Please, input the currency.")
     else:
-        headers = {'Content-type': 'application/json'}
 
         currency = re.findall(REGEX, text, re.IGNORECASE)
         if len(currency)>1:
@@ -164,20 +193,8 @@ def inlinequery(bot, update):
 
         results.append(InlineQueryResultArticle(
                 id=hex(getrandbits(64))[2:],
-                title="Caps",
-                message_text=query.upper()))
-
-        results.append(InlineQueryResultArticle(
-                id=hex(getrandbits(64))[2:],
-                title="Bold",
-                message_text="*%s*" % escape_markdown(query),
-                parse_mode=ParseMode.MARKDOWN))
-
-        results.append(InlineQueryResultArticle(
-                id=hex(getrandbits(64))[2:],
-                title="Italic",
-                message_text="_%s_" % escape_markdown(query),
-                parse_mode=ParseMode.MARKDOWN))
+                title="History",
+                message_text=HISTORY_MESSAGE))
 
         bot.answerInlineQuery(update.inline_query.id, results=results)
 
@@ -187,7 +204,7 @@ def error(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
 
 
-def main():
+def main(): 
     # Create the Updater and pass it your bot's token.
     updater = Updater("181752127:AAFX10TTymBCbB4_0RKG5LxtoBJKgyYUulM")
 
@@ -200,6 +217,7 @@ def main():
     dp.addTelegramCommandHandler("pay", pay)
     dp.addTelegramCommandHandler("fee", fee)
     dp.addTelegramCommandHandler("history", history)
+    dp.addTelegramCommandHandler("confirm", confirm)
 
     # on noncommand i.e message - echo the message on Telegram
     dp.addTelegramInlineHandler(inlinequery)
